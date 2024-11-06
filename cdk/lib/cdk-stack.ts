@@ -22,18 +22,18 @@ export class EventsGateTinyStack extends cdk.Stack {
 
 
     // Create log group for storing all events
-    const logGroup = new logs.LogGroup(this, 'WatchEventsLogGroup', {
-      logGroupName: `${resPrefix}/watch`,
+    const logGroup = new logs.LogGroup(this, `WatchEventsLogGroup-${eventbusname}`, {
+      logGroupName: `${resPrefix}/${eventbusname}/watch`,
       retention: logs.RetentionDays.ONE_DAY
     });
 
     // Define a new EventBridge rule to capture all events
-    const allEventsRule = new events.Rule(this, 'AllEventsRule', {
+    const allEventsRule = new events.Rule(this, `AllEventsRule-${eventbusname}`, {
       ruleName: `${resPrefix}WatchBusRule`,
       eventPattern: {
         account: [this.account]     // Captures all the events
       },
-      eventBus: events.EventBus.fromEventBusName(this, 'EventBusToWatch', eventbusname)
+      eventBus: events.EventBus.fromEventBusName(this, `EventBusToWatch-${eventbusname}`, eventbusname)
     });
 
     // Link the rule to the cloudwatch group
