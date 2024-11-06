@@ -1,0 +1,65 @@
+service: events-gate-tiny
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  environment:
+    RES_PREFIX: "EventsGate"
+  logs:
+    restApi:
+      accessLogging: true
+      level: INFO
+
+custom:
+  # Define the Event Bus name through custom variables or defaults
+  eventBusName: ${opt:bus, 'default'} # Use CLI parameter --bus to pass event bus name, defaults to 'default'
+  logGroupName: ${self:provider.environment.RES_PREFIX}/${self:custom.eventBusName}/watch
+
+resources:
+  Resources:
+    # Define a CloudWatch Log Group for storing events
+    WatchEventsLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: ${self:custom.logGroupName}
+        RetentionInDays: 1  # Retention policy
+
+    # Define an EventBridge Rule to capture all events in the account
+    AllEventsRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Name: ${self:provider.environment.RES_PREFIX}WatchBusRule
+        EventBusName: !Sub ${self:custom.eventBusName}
+        EventPattern:
+          account:
+            - !Ref "AWS::AccountId"   # Capture all events in the account
+        Targets:
+          - Id: "CloudWatchLogGroupTarget"
+            Arn: !GetAtt WatchEventsLogGroup.Arn
+            RoleArn: !GetAtt EventBridgeToCloudWatchRole.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 3600  # Equivalent to 1 hour
+
+    # Define the IAM Role for EventBridge to CloudWatch Log Group
+    EventBridgeToCloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service: "events.amazonaws.com"
+              Action: "sts:AssumeRole"
+        Policies:
+          - PolicyName: "EventBridgeToCloudWatchPolicy"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource: !GetAtt WatchEventsLogGroup.Arn
