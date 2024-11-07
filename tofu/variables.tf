@@ -15,3 +15,8 @@ variable "region" {
   description = "Region for deploying the resources into"
   type        = string
 }
+
+variable "tags" {
+  type    = map(any)
+  default = {}
+}

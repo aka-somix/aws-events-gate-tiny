@@ -11,13 +11,8 @@ locals {
   event_pattern = jsonencode({
     "account" = [data.aws_caller_identity.current.account_id]
   })
-}
 
-
-# Create CloudWatch Logs Group
-resource "aws_cloudwatch_log_group" "watch_events_log_group" {
-  name              = local.log_group_name
-  retention_in_days = var.retention_days
+  tags = merge(var.tags, { "Project" : "EventsGate" })
 }
 
 # Reference existing EventBridge Bus
@@ -25,51 +20,44 @@ data "aws_cloudwatch_event_bus" "target_bus" {
   name = var.eventbus_name
 }
 
+
+# Create CloudWatch Logs Group
+resource "aws_cloudwatch_log_group" "watch_events_log_group" {
+  name              = local.log_group_name
+  retention_in_days = var.retention_days
+  tags              = local.tags
+}
+
+# Create a Log Policy to allow Cloudwatch to Create log streams and put logs
+resource "aws_cloudwatch_log_resource_policy" "watch_events" {
+  policy_name = "${local.res_prefix}-allow-logs-${data.aws_caller_identity.current.account_id}"
+  policy_document = jsonencode({
+    "Version" : "2012-10-17",
+    "Id" : "EventsGateLogsFromEventbridge",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : [
+            "events.amazonaws.com",
+            "delivery.logs.amazonaws.com"
+          ]
+        },
+        "Action" : [
+          "logs:*"
+        ],
+        "Resource" : "${aws_cloudwatch_log_group.watch_events_log_group.arn}"
+      }
+    ]
+  })
+}
+
 # Create EventBridge Rule
 resource "aws_cloudwatch_event_rule" "all_events_rule" {
   name           = local.rule_name
   event_bus_name = data.aws_cloudwatch_event_bus.target_bus.name
   event_pattern  = local.event_pattern
-}
-
-# IAM Role for EventBridge to write to CloudWatch Logs
-resource "aws_iam_role" "eventbridge_to_logs_role" {
-  name = "${local.res_prefix}-eventbridge-logs-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
-      Principal = {
-        Service = "events.amazonaws.com"
-      }
-    }]
-  })
-}
-
-# IAM Policy to allow writing to the log group
-resource "aws_iam_policy" "eventbridge_to_logs_policy" {
-  name        = "${local.res_prefix}-eventbridge-logs-policy"
-  description = "Policy for EventBridge to write logs to CloudWatch Logs."
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = [
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      Resource = aws_cloudwatch_log_group.watch_events_log_group.arn
-    }]
-  })
-}
-
-# Attach Policy to Role
-resource "aws_iam_role_policy_attachment" "attach_eventbridge_logs_policy" {
-  role       = aws_iam_role.eventbridge_to_logs_role.name
-  policy_arn = aws_iam_policy.eventbridge_to_logs_policy.arn
+  tags           = local.tags
 }
 
 # Add Target to EventBridge Rule
@@ -78,5 +66,4 @@ resource "aws_cloudwatch_event_target" "log_group_target" {
   event_bus_name = data.aws_cloudwatch_event_bus.target_bus.name
   target_id      = "CloudWatchLogs"
   arn            = aws_cloudwatch_log_group.watch_events_log_group.arn
-  role_arn       = aws_iam_role.eventbridge_to_logs_role.arn
 }

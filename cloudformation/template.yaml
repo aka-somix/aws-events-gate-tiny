@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for capturing all events from an EventBridge event bus and logging them in CloudWatch.
+
+Parameters:
+  EventBusName:
+    Type: String
+    Description: The name of the EventBridge bus to watch. Defaults to the "default" Event bus.
+    Default: default
+
+Resources:
+  # CloudWatch Log Group for storing all events
+  WatchEventsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub 'EventsGate/${EventBusName}/watch'
+      RetentionInDays: 1
+
+  # EventBridge Rule to capture all events
+  AllEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'EventsGateWatchBusRule'
+      EventPattern:
+        account: 
+          - !Ref 'AWS::AccountId'
+      EventBusName: !Ref EventBusName
+      Targets:
+        - Id: LogGroupTarget
+          Arn: !GetAtt WatchEventsLogGroup.Arn
+          # Maximum age for events in target queue
+          RetryPolicy:
+            MaximumEventAgeInSeconds: 3600
+
+Outputs:
+  LogGroupName:
+    Description: Name of the CloudWatch Log Group capturing EventBridge events.
+    Value: !Ref WatchEventsLogGroup

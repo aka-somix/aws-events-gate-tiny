@@ -3,5 +3,5 @@
 To deploy:
 ```
 tofu init
-tofu apply
+tofu apply --var-file="example.tfvars"
 ```
