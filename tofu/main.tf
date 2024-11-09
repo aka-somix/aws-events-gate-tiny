@@ -33,20 +33,19 @@ resource "aws_cloudwatch_log_resource_policy" "watch_events" {
   policy_name = "${local.res_prefix}-allow-logs-${data.aws_caller_identity.current.account_id}"
   policy_document = jsonencode({
     "Version" : "2012-10-17",
-    "Id" : "EventsGateLogsFromEventbridge",
+    "Id" : "EventsGateLogsFromEventbridge${var.eventbus_name}",
     "Statement" : [
       {
         "Effect" : "Allow",
         "Principal" : {
           "Service" : [
-            "events.amazonaws.com",
-            "delivery.logs.amazonaws.com"
+            "events.amazonaws.com"
           ]
         },
         "Action" : [
           "logs:*"
         ],
-        "Resource" : "${aws_cloudwatch_log_group.watch_events_log_group.arn}"
+        "Resource" : "${aws_cloudwatch_log_group.watch_events_log_group.arn}:*"
       }
     ]
   })
