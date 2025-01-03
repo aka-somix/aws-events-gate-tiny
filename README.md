@@ -108,3 +108,7 @@ Nevertheless, the main elements of cost to keep under control to avoid excessive
 This tool is (currently) made and maintained with 💜 by [aka-somix](https://github.com/aka-somix). 
 For any bug or feature request feel free to open a Issue in the dedicated section of this repository.
 
+
+## 📎 External Sources and credits
+The solution is based on a reference architecture documented and available on [Serverless Land](https://serverlessland.com/patterns/eventbridge-cloudwatch)
+
