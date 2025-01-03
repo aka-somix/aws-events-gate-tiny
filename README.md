@@ -4,7 +4,7 @@ This stack creates an EventBridge rule that captures all events from a specified
 By centralizing events into a single log group, this solution simplifies troubleshooting, auditing, and debugging workflows across your AWS environment.
 
 #### What's the TINY edition
-We are working on a slightly larger product for dinamically monitoring all your event buses with a UI and a custom deployment mdoel. If interested you should check out the [AWS-EVENTS-GATE repo](https://github.com/aka-somix/aws-events-gate)
+This is a PoC for a slightly larger product for dinamically monitoring all your event buses from a CLI (or maybe a full GUI) tool. If interested you should check out the [aws-events-gate repo](https://github.com/aka-somix/aws-events-gate)
 
 
 ![Cloud Provider](https://img.shields.io/badge/Cloud-AWS-FF9900?logo=amazonwebservices&style=for-the-badge)
